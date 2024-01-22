@@ -1,2 +1,2 @@
-#Projet LG 2024
+# Projet LG 2024
 ## Work In Progress
