@@ -7,13 +7,26 @@ function init() {
     rendu.shadowMap.enabled = true;
     let scene = new THREE.Scene();
     let camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 100);
-    rendu.setClearColor(new THREE.Color(0xFFFFFF));
+    rendu.setClearColor(new THREE.Color(0xFFFFF0));
     rendu.setSize(window.innerWidth * 0.9, window.innerHeight * 0.9);
+
+    const tableLength = 2.74; // meters
+    const tableWidth = 1.525; // meters
+    const tableHeight = 0.76; // meters, height from ground to top of table
 
     function createTableTennisSetup(scene) {
         createNet(scene);
         createTableLegs(scene);
         createTableTop(scene);
+
+
+        const tableWidth = 1.525; // meters
+        const tableLength = 2.74; // meters
+        const tableHeight = 0.76; // meters
+
+        // Create rackets on the middle of their respective sides and exactly at the edge of the table
+        createTableTennisRacket(scene, new THREE.Vector3(-tableLength / 2, 0, tableHeight + 0.25), new THREE.Euler(0, Math.PI / 2, 0));
+        createTableTennisRacket(scene, new THREE.Vector3(tableLength / 2, 0, tableHeight + 0.25), new THREE.Euler(0, -Math.PI / 2, 0));
     }
 
     function createWhiteLine(scene, position, dimensions, rotation) {
@@ -65,20 +78,19 @@ function init() {
         }
             
 
-    // Lines on the player sides borders of the table
-    createWhiteLine(scene, { x: -tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
-    createWhiteLine(scene, { x: tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
+        // Lines on the player sides borders of the table
+        createWhiteLine(scene, { x: -tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
+        createWhiteLine(scene, { x: tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
 
-    // Outer white lines for the table borders
-    createWhiteLine(scene, { x: 0, y: tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
-    createWhiteLine(scene, { x: 0, y: -tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
+        // Outer white lines for the table borders
+        createWhiteLine(scene, { x: 0, y: tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
+        createWhiteLine(scene, { x: 0, y: -tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
 
-    // Vertical line on the middle of the table
-    createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableLength, z: lineThickness }, Math.PI / 2);
+        // Vertical line on the middle of the table
+        createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableLength, z: lineThickness }, Math.PI / 2);
 
-    // Line in the middle of the table
-    createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableWidth, z: lineThickness }, 0);
-
+        // Line in the middle of the table
+        createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableWidth, z: lineThickness }, 0);
     }
         
     
@@ -123,7 +135,7 @@ function init() {
         const topLineMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const topLineMesh = new THREE.Mesh(topLineGeometry, topLineMaterial);
 
-        // Rotate the line π/2 around the x-axis
+        // Rotate the line π/2 around the z-axis
         topLineMesh.rotation.z = Math.PI / 2;
 
         // Set the position of the line
@@ -149,6 +161,51 @@ function init() {
         rightHolderMesh.position.set(0, tableWidth / 2 + holderThickness / 2, tableHeight + holderHeight / 2);
         scene.add(rightHolderMesh);
     }
+
+    function createTableTennisRacket(scene, position, rotation) {
+        // Dimensions for the blade and handle
+        const bladeRadius = 0.075; // meters, roughly the half-width of the blade
+        const bladeThickness = 0.005; // meters, thickness of the blade
+        const handleLength = 0.1; // meters, length of the handle
+        const handleWidth = 0.02; // meters, width of the handle
+        const handleDepth = 0.01; // meters, depth of the handle
+
+        // Materials
+        const rubberMaterialRed = new THREE.MeshBasicMaterial({ color: 0xFF0000 }); // Red rubber
+        const rubberMaterialBlack = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Black rubber
+        const woodMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Wood for the handle
+
+        // Blade geometry (a flat cylinder)
+        const bladeGeometry = new THREE.CylinderGeometry(bladeRadius, bladeRadius, bladeThickness, 32);
+        bladeGeometry.rotateX(Math.PI / 2); // Rotate the geometry to be perpendicular to the handle
+
+        // Handle geometry (a box)
+        const handleGeometry = new THREE.BoxGeometry(handleWidth, handleDepth, handleLength);
+        handleGeometry.translate(0, -handleLength / 2 - bladeThickness / 2, 0); // Translate the geometry so the handle aligns with the blade
+
+        // Create the meshes
+        const bladeMeshRed = new THREE.Mesh(bladeGeometry, rubberMaterialRed);
+        const bladeMeshBlack = new THREE.Mesh(bladeGeometry, rubberMaterialBlack);
+        const handleMesh = new THREE.Mesh(handleGeometry, woodMaterial);
+
+        // Position and rotate the meshes
+        bladeMeshRed.position.copy(position);
+        bladeMeshBlack.position.copy(position);
+        handleMesh.position.copy(position);
+
+        bladeMeshRed.rotation.copy(rotation);
+        bladeMeshBlack.rotation.copy(rotation);
+        handleMesh.rotation.copy(rotation);
+
+        // The black side of the blade should face down, rotate it by PI
+        bladeMeshBlack.rotation.z += Math.PI;
+
+        // Add the meshes to the scene
+        scene.add(bladeMeshRed);
+        scene.add(bladeMeshBlack);
+        scene.add(handleMesh);
+    }
+    
 
 
     function createTableLegs(scene) {
