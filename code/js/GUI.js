@@ -16,84 +16,107 @@ function init() {
         createTableTop(scene);
     }
 
+    function createWhiteLine(scene, position, dimensions, rotation) {
+        const lineMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); // White
+        const lineGeometry = new THREE.BoxGeometry(dimensions.x, dimensions.y, dimensions.z);
+    
+        const line = new THREE.Mesh(lineGeometry, lineMaterial);
+        line.position.set(position.x, position.y, position.z);
+        line.rotation.z = rotation;
+    
+        scene.add(line);
+    }
+    
+    
+    
     function createTableQuarter(scene, position, color) {
         const quarterTableLength = 2.74 / 2; // Half the length for a quarter
         const quarterTableWidth = 1.525 / 2; // Half the width for a quarter
         const tableThickness = 0.05;
-        const tableHeight = 0.76;
         
         const material = new THREE.MeshLambertMaterial({ color: color });
         const tableGeometry = new THREE.BoxGeometry(quarterTableLength, quarterTableWidth, tableThickness);
         const tableTop = new THREE.Mesh(tableGeometry, material);
         
-        tableTop.position.set(position.x, position.y, position.z + tableHeight + tableThickness / 2);
+        tableTop.position.set(position.x, position.y, position.z + tableThickness / 2);
         
         scene.add(tableTop);
     }
     
     function createTableTop(scene) {
-        // Position for each quarter of the table
+        const tableLength = 2.74; // meters
+        const tableWidth = 1.525; // meters
+        const tableThickness = 0.05; // meters
+        const tableHeight = 0.76; // meters, height from ground to top of table
+        const lineHeight = tableHeight + tableThickness;
+        const lineThickness = 0.015; // Adjust thickness as needed
+        
         const positions = [
-            { x: -2.74 / 4, y: 1.525 / 4, z: 0 }, // Yellow
-            { x: 2.74 / 4, y: 1.525 / 4, z: 0 },  // Red
-            { x: -2.74 / 4, y: -1.525 / 4, z: 0 }, // Green
-            { x: 2.74 / 4, y: -1.525 / 4, z: 0 }   // Blue
+            { x: -tableLength / 4, y: tableWidth / 4, z: tableHeight },
+            { x: tableLength / 4, y: tableWidth / 4, z: tableHeight },
+            { x: -tableLength / 4, y: -tableWidth / 4, z: tableHeight },
+            { x: tableLength / 4, y: -tableWidth / 4, z: tableHeight }
         ];
     
-        // Colors for each quarter of the table
-        const colors = [0xF2F28F, 0xB68381, 0x8EBD86, 0x8080BA]; // Yellow, Red, Green, Blue
+        const colors = [0xF2F28F, 0xB68381, 0x8EBD86, 0x8080BA];
     
-        // Create each quarter
         for (let i = 0; i < positions.length; i++) {
             createTableQuarter(scene, positions[i], colors[i]);
         }
+            
+
+    // Lines on the player sides borders of the table
+    createWhiteLine(scene, { x: -tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
+    createWhiteLine(scene, { x: tableLength / 2, y: 0, z: lineHeight }, { x: 0.01, y: tableWidth, z: lineThickness }, 0);
+
+    // Outer white lines for the table borders
+    createWhiteLine(scene, { x: 0, y: tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
+    createWhiteLine(scene, { x: 0, y: -tableWidth / 2, z: lineHeight }, { x: tableLength + 0.01, y: lineThickness, z: lineThickness }, 0);
+
+    // Vertical line on the middle of the table
+    createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableLength, z: lineThickness }, Math.PI / 2);
+
+    // Line in the middle of the table
+    createWhiteLine(scene, { x: 0, y: 0, z: lineHeight }, { x: lineThickness, y: tableWidth, z: lineThickness }, 0);
+
     }
+        
     
     function createNet(scene) {
         const tableWidth = 1.525; // meters, the full width of the table
         const netHeight = 0.1525; // meters, height of the net
         const tableHeight = 0.76; // meters, height from ground to top of table
-        const netThickness = 0.01; // meters, thickness of the net
         
-        // Geometry for the net as a grid
-        const netGeometry = new THREE.BoxGeometry(netThickness, tableWidth, netHeight);
-        const edges = new THREE.EdgesGeometry(netGeometry);
+        const numVerticalLines = 60; // Number of vertical lines in the net grid
+        const numHorizontalLines = 30; // Number of horizontal lines in the net grid
+        const verticalSpacing = tableWidth / (numVerticalLines - 1);
+        const horizontalSpacing = netHeight / (numHorizontalLines - 1);
+    
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
         
-        // White material for the net to contrast against the table
-        const netMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
+        // Create vertical lines (along the length of the table)
+        for (let i = 0; i < numVerticalLines; i++) {
+            const verticalLineGeometry = new THREE.Geometry();
+            verticalLineGeometry.vertices.push(
+                new THREE.Vector3(0, -tableWidth / 2 + i * verticalSpacing, tableHeight),
+                new THREE.Vector3(0, -tableWidth / 2 + i * verticalSpacing, tableHeight + netHeight)
+            );
+            const verticalLine = new THREE.Line(verticalLineGeometry, lineMaterial);
+            scene.add(verticalLine);
+        }
         
-        // Creating a grid-like net
-        const netMesh = new THREE.LineSegments(edges, netMaterial);
-        
-        // Positioning the net on the table
-        netMesh.position.set(0, 0, tableHeight + netHeight / 2);
-        
-        scene.add(netMesh);
+        // Create horizontal lines (across the width of the table)
+        for (let i = 0; i < numHorizontalLines; i++) {
+            const horizontalLineGeometry = new THREE.Geometry();
+            horizontalLineGeometry.vertices.push(
+                new THREE.Vector3(0, -tableWidth / 2, tableHeight + i * horizontalSpacing),
+                new THREE.Vector3(0, tableWidth / 2, tableHeight + i * horizontalSpacing)
+            );
+            const horizontalLine = new THREE.Line(horizontalLineGeometry, lineMaterial);
+            scene.add(horizontalLine);
+        }
     }
-    
-    
-    function createNet(scene) {
-        const tableWidth = 1.525; // meters, the full width of the table
-        const netHeight = 0.1525; // meters, height of the net
-        const tableHeight = 0.76; // meters, height from ground to top of table
-        const netThickness = 0.01; // meters, thickness of the net
-    
-        // Geometry for the net as a grid
-        const netGeometry = new THREE.BoxGeometry(netThickness, tableWidth, netHeight);
-        const edges = new THREE.EdgesGeometry(netGeometry);
-    
-        // Dark grey material for better visibility against white background
-        const netMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
-    
-        // Creating a grid-like net
-        const netMesh = new THREE.LineSegments(edges, netMaterial);
-    
-        // Positioning the net on the table
-        netMesh.position.set(0, 0, tableHeight + netHeight / 2);
-    
-        scene.add(netMesh);
-    }
-    
+     
     
     
     function createTableLegs(scene) {
